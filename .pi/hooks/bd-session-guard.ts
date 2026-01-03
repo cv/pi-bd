@@ -1,8 +1,8 @@
 /**
  * bd Session Guard Hook
  *
- * Ensures work is properly committed and pushed before ending a session.
- * Runs full preflight checks on session shutdown and provides /preflight command.
+ * Provides /preflight command and warns on session switch if work isn't committed.
+ * Note: session_shutdown can't block exit, so we only guard on /new and /resume.
  */
 
 import type { HookAPI, HookContext } from "@mariozechner/pi-coding-agent";
@@ -136,11 +136,6 @@ export default function (pi: HookAPI) {
 
   // Run on /new or /resume
   pi.on("session_before_switch", async (_event, ctx) => {
-    await guardSession(ctx);
-  });
-
-  // Run on exit (Ctrl+C, Ctrl+D)
-  pi.on("session_shutdown", async (_event, ctx) => {
     await guardSession(ctx);
   });
 
