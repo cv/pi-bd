@@ -1,13 +1,10 @@
 # pi-bd
 
-[pi-coding-agent](https://github.com/badlogic/pi-mono) hooks for [Beads](https://github.com/steveyegge/beads) issue tracking.
+[pi-coding-agent](https://github.com/badlogic/pi-mono) hook for [Beads](https://github.com/steveyegge/beads) issue tracking.
 
 ## What This Does
 
-When you run `pi` in a project with a `.beads/` directory, these hooks:
-
-- **Auto-load context** - Runs `bd prime` on session start so the agent understands your workflow
-- **Provide slash commands** - Quick access to common bd operations
+When you run `pi` in a project with a `.beads/` directory, this hook runs `bd prime` on session start so the agent understands your bd workflow.
 
 ## Installation
 
@@ -32,24 +29,16 @@ pi --hook git:https://github.com/cv/pi-bd
 - [pi-coding-agent](https://github.com/badlogic/pi-mono) installed
 - [Beads](https://github.com/steveyegge/beads) (`bd`) installed and on PATH
 
-## Slash Commands
+## Usage
 
-| Command | Description |
-|---------|-------------|
-| `/bd-ready` | Show issues ready to work on |
-| `/bd-show <id>` | Show issue details |
-| `/bd-claim <id>` | Claim an issue (set to in_progress) |
-| `/bd-close <id> [reason]` | Close an issue |
-| `/bd-sync` | Sync beads with git |
-| `/bd-status` | Quick project health overview |
-| `/bd-prime` | Refresh bd context (after compaction) |
+Just use `!bd <command>` in pi to run any bd command:
 
-## Hooks
-
-| Hook | Purpose |
-|------|---------|
-| `bd-context.ts` | Injects workflow context on session start |
-| `bd-commands.ts` | Registers slash commands |
+```
+!bd ready          # Find available work
+!bd show <id>      # View issue details
+!bd close <id>     # Complete work
+!bd sync           # Sync with git
+```
 
 ## License
 
