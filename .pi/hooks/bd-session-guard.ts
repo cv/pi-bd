@@ -102,19 +102,30 @@ function formatChecks(checks: Check[]): { summary: string; allOk: boolean } {
 }
 
 export default function (pi: HookAPI) {
-  // Run full preflight on session shutdown
-  pi.on("session_shutdown", async (_event, ctx) => {
+  // Helper to run checks and warn
+  async function guardSession(ctx: HookContext): Promise<boolean> {
     const beadsDir = join(ctx.cwd, ".beads");
     if (!existsSync(beadsDir)) {
-      return;
+      return true; // No beads, no checks needed
     }
 
     const checks = await runPreflightChecks(pi, ctx);
     const { summary, allOk } = formatChecks(checks);
 
-    if (!allOk) {
+    if (!allOk && ctx.hasUI) {
       ctx.ui.notify(summary, "warning");
     }
+    return allOk;
+  }
+
+  // Run on /new or /resume
+  pi.on("session_before_switch", async (_event, ctx) => {
+    await guardSession(ctx);
+  });
+
+  // Run on exit (Ctrl+C, Ctrl+D)
+  pi.on("session_shutdown", async (_event, ctx) => {
+    await guardSession(ctx);
   });
 
   // /preflight command for manual checks
