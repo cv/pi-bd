@@ -56,51 +56,33 @@ async function runPreflightChecks(pi: HookAPI, ctx: HookContext): Promise<Check[
     checks.push({ name: "Unpushed commits", ok: true, detail: "Up to date" });
   }
 
-  // Check 3: bd sync status
-  // Note: bd sync --status doesn't output "pending" - we check for actual differences
-  // See: pi-bd-12o for tracking machine-readable status output
-  const { stdout: syncOut, code: syncCode } = await pi.exec("bd", ["sync", "--status"], {
-    timeout: 5000,
+  // Check 3: bd doctor for overall health (includes sync status)
+  // Note: bd sync --status shows branch diffs which is expected with sync-branch workflow
+  // bd doctor gives us the authoritative health check
+  // See: pi-bd-12o for tracking machine-readable sync status
+  const { stdout: doctorOut, code: doctorCode } = await pi.exec("bd", ["doctor"], {
+    timeout: 10000,
   });
 
-  if (syncCode !== 0) {
-    checks.push({ name: "bd sync", ok: false, detail: "Sync check failed" });
-  } else if (syncOut) {
-    // Parse the sync status output to detect pending changes
-    // Look for the "not in sync branch:" section and check if it has commits listed
-    const lines = syncOut.split("\n");
-    let inNotInSyncSection = false;
-    let hasUnmergedCommits = false;
-    let hasFileDiffs = false;
+  if (doctorCode !== 0) {
+    checks.push({ name: "bd health", ok: false, detail: "bd doctor failed" });
+  } else if (doctorOut) {
+    // Check for warnings or failures in doctor output
+    const hasWarnings = doctorOut.includes("⚠") && !doctorOut.includes("⚠ 0 warnings");
+    const hasFailures = doctorOut.includes("✖") && !doctorOut.includes("✖ 0 failed");
     
-    for (const line of lines) {
-      if (line.includes("not in sync branch:")) {
-        inNotInSyncSection = true;
-        continue;
-      }
-      if (inNotInSyncSection) {
-        if (line.trim() === "(none)") {
-          inNotInSyncSection = false;
-        } else if (line.trim() && !line.includes("File differences")) {
-          // Found a commit hash line
-          hasUnmergedCommits = true;
-          inNotInSyncSection = false;
-        } else if (line.includes("File differences")) {
-          inNotInSyncSection = false;
-        }
-      }
-      if (line.includes("File differences") && !syncOut.includes("(no differences)")) {
-        hasFileDiffs = true;
-      }
-    }
-    
-    if (hasUnmergedCommits || hasFileDiffs) {
-      checks.push({ name: "bd sync", ok: false, detail: "Pending changes - run 'bd sync'" });
+    if (hasFailures) {
+      checks.push({ name: "bd health", ok: false, detail: "Issues detected - run 'bd doctor'" });
+    } else if (hasWarnings) {
+      // Extract warning count
+      const match = doctorOut.match(/⚠\s*(\d+)\s*warning/);
+      const count = match ? match[1] : "some";
+      checks.push({ name: "bd health", ok: false, detail: `${count} warning(s) - run 'bd doctor'` });
     } else {
-      checks.push({ name: "bd sync", ok: true, detail: "Synced" });
+      checks.push({ name: "bd health", ok: true, detail: "All checks passed" });
     }
   } else {
-    checks.push({ name: "bd sync", ok: true, detail: "Synced" });
+    checks.push({ name: "bd health", ok: true, detail: "OK" });
   }
 
   // Check 4: In-progress issues (informational)
