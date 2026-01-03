@@ -57,14 +57,48 @@ async function runPreflightChecks(pi: HookAPI, ctx: HookContext): Promise<Check[
   }
 
   // Check 3: bd sync status
+  // Note: bd sync --status doesn't output "pending" - we check for actual differences
+  // See: pi-bd-12o for tracking machine-readable status output
   const { stdout: syncOut, code: syncCode } = await pi.exec("bd", ["sync", "--status"], {
     timeout: 5000,
   });
 
   if (syncCode !== 0) {
     checks.push({ name: "bd sync", ok: false, detail: "Sync check failed" });
-  } else if (syncOut && syncOut.toLowerCase().includes("pending")) {
-    checks.push({ name: "bd sync", ok: false, detail: "Pending changes" });
+  } else if (syncOut) {
+    // Parse the sync status output to detect pending changes
+    // Look for the "not in sync branch:" section and check if it has commits listed
+    const lines = syncOut.split("\n");
+    let inNotInSyncSection = false;
+    let hasUnmergedCommits = false;
+    let hasFileDiffs = false;
+    
+    for (const line of lines) {
+      if (line.includes("not in sync branch:")) {
+        inNotInSyncSection = true;
+        continue;
+      }
+      if (inNotInSyncSection) {
+        if (line.trim() === "(none)") {
+          inNotInSyncSection = false;
+        } else if (line.trim() && !line.includes("File differences")) {
+          // Found a commit hash line
+          hasUnmergedCommits = true;
+          inNotInSyncSection = false;
+        } else if (line.includes("File differences")) {
+          inNotInSyncSection = false;
+        }
+      }
+      if (line.includes("File differences") && !syncOut.includes("(no differences)")) {
+        hasFileDiffs = true;
+      }
+    }
+    
+    if (hasUnmergedCommits || hasFileDiffs) {
+      checks.push({ name: "bd sync", ok: false, detail: "Pending changes - run 'bd sync'" });
+    } else {
+      checks.push({ name: "bd sync", ok: true, detail: "Synced" });
+    }
   } else {
     checks.push({ name: "bd sync", ok: true, detail: "Synced" });
   }
