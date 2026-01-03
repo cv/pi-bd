@@ -8,7 +8,6 @@ When you run `pi` in a project with a `.beads/` directory, these hooks:
 
 - **Auto-load context** - Runs `bd prime` on session start so the agent understands your workflow
 - **Provide slash commands** - Quick access to common bd operations
-- **Guard session close** - Warns about uncommitted changes or unpushed work
 
 ## Installation
 
@@ -44,7 +43,6 @@ pi --hook git:https://github.com/cv/pi-bd
 | `/bd-sync` | Sync beads with git |
 | `/bd-status` | Quick project health overview |
 | `/bd-prime` | Refresh bd context (after compaction) |
-| `/preflight` | Check if ready to end session |
 
 ## Hooks
 
@@ -52,7 +50,6 @@ pi --hook git:https://github.com/cv/pi-bd
 |------|---------|
 | `bd-context.ts` | Injects workflow context on session start |
 | `bd-commands.ts` | Registers slash commands |
-| `bd-session-guard.ts` | Validates state on session end |
 
 ## License
 

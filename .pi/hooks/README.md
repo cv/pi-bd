@@ -11,13 +11,6 @@ Automatically injects bd workflow context when starting a session in a project w
 - Runs `bd prime` on session start
 - Provides `/bd-prime` command to refresh context after compaction
 
-### bd-session-guard.ts
-
-Ensures work is properly committed and pushed before ending a session.
-
-- On shutdown: warns about uncommitted changes, unpushed commits, or pending sync
-- Provides `/preflight` command to check readiness before handoff
-
 ### bd-commands.ts
 
 Quick slash commands for common bd operations:
@@ -48,4 +41,4 @@ pi --hook .pi/hooks/bd-context.ts
 3. **Claim issue**: `/bd-claim beads-xxx` or `bd update beads-xxx --status=in_progress`
 4. **Do work**: Implement the issue
 5. **Close issue**: `/bd-close beads-xxx` or `bd close beads-xxx`
-6. **End session**: `/preflight` to check, then commit and push
+6. **End session**: Commit and push
